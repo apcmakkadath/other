@@ -9,3 +9,23 @@ $response = Invoke-WebRequest -Uri "https://example.com/login" -WebSession $sess
 
 # Use the same session for subsequent requests
 $response2 = Invoke-WebRequest -Uri "https://example.com/protected" -WebSession $session
+---------- using http client --------
+# Create a cookie container and an HTTP client
+$cookieContainer = New-Object System.Net.CookieContainer
+$handler = New-Object System.Net.Http.HttpClientHandler
+$handler.CookieContainer = $cookieContainer
+$httpClient = [System.Net.Http.HttpClient]::new($handler)
+
+# First request to set the cookie
+$requestUri = "https://example.com/login"
+$content = New-Object System.Net.Http.FormUrlEncodedContent @{
+    username = "user"
+    password = "password"
+}
+$response = $httpClient.PostAsync($requestUri, $content).Result
+
+# Second request using the same cookie container
+$response2 = $httpClient.GetAsync("https://example.com/protected").Result
+$result = $response2.Content.ReadAsStringAsync().Result
+
+Write-Output $result
