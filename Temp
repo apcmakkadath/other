@@ -29,3 +29,22 @@ $response2 = $httpClient.GetAsync("https://example.com/protected").Result
 $result = $response2.Content.ReadAsStringAsync().Result
 
 Write-Output $result
+----- double encode ------
+# Function to double-encode a string
+function DoubleEncode-String {
+    param (
+        [Parameter(Mandatory)]
+        [string]$InputString
+    )
+    # Perform the first encoding
+    $encodedOnce = [System.Web.HttpUtility]::UrlEncode($InputString)
+    # Perform the second encoding
+    $encodedTwice = [System.Web.HttpUtility]::UrlEncode($encodedOnce)
+    return $encodedTwice
+}
+
+# Example usage
+$originalString = "Hello World!"
+$doubleEncodedString = DoubleEncode-String -InputString $originalString
+Write-Host "Original String: $originalString"
+Write-Host "Double Encoded String: $doubleEncodedString"
