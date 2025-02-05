@@ -1,0 +1,11 @@
+Create a session
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+
+# First request (e.g., to get a session cookie)
+$response = Invoke-WebRequest -Uri "https://example.com/login" -WebSession $session -Method POST -Body @{
+    username = "user"
+    password = "password"
+}
+
+# Use the same session for subsequent requests
+$response2 = Invoke-WebRequest -Uri "https://example.com/protected" -WebSession $session
