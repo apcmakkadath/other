@@ -1,139 +1,40 @@
-#!/bin/sh
-clear
-
-############## elastic search
-el_response=$(curl -s localhost:9200)
-cl_name=$(echo $el_response | jq -r '.cluster_name')
-vnumber=$(echo $el_response | jq -r '.version.number')
-
-############## host
-tput setaf 2;echo -e "\nHosts";tput sgr0
-if test -f /home/logrhythm/Soft/hosts; then
-  printf "%-20s %-20s %-20s\n" "Hostname" "OS Name" "OS Version"
-  printf "%-20s %-20s %-20s\n" "--------" "-------" "----------"
-  for i in $(awk '{print $1}' /home/logrhythm/Soft/hosts); do
-    ssh -q logrhythm@$i "
-      hostname=\$(hostname)
-      os_name=\$(grep '^NAME=' /etc/os-release | cut -d'=' -f2 | tr -d '\"')
-      os_version=\$(grep '^VERSION=' /etc/os-release | cut -d'=' -f2 | tr -d '\"')
-      printf \"%-20s %-20s %-20s\n\" \"\$hostname\" \"\$os_name\" \"\$os_version\"
-    "
-  done
-else
-  echo -e "\nMake sure that 'hosts' file exists"
-fi
-
-############## cluster health
-clhresponse=$(curl -s localhost:9200/_cluster/health)
-cluster_status=$(echo $clhresponse | jq -r '.status')
-number_of_nodes=$(echo $clhresponse | jq -r '.number_of_nodes')
-number_of_data_nodes=$(echo $clhresponse | jq -r '.number_of_data_nodes')
-active_shards_percentage=$(echo $clhresponse | jq -r '.active_shards_percent_as_number')
-unassigned_shards=$(echo $clhresponse | jq -r '.unassigned_shards')
-
-############## indices
-indices=$(curl -s localhost:9200/_cat/indices?h=index)
-log_indices_count=$(echo "$indices" | tr ' ' '\n' | grep logs | wc -l)
-emdb_indices_count=$(echo "$indices" | tr ' ' '\n' | grep emdb | wc -l)
-indices_state=$(curl -s localhost:9200/_cat/indices?h=state)
-red_indices_count=$(echo "$indices_state" | tr ' ' '\n' | grep red | wc -l)
-yellow_indices_count=$(echo "$indices_state" | tr ' ' '\n' | grep yellow | wc -l)
-
-############## shards
-shards=$(curl -s localhost:9200/_cat/shards?h=state)
-shards_started=$(echo "$shards" | tr ' ' '\n' | grep STARTED | wc -l)
-shards_initializing=$(echo "$shards" | tr ' ' '\n' | grep INITIALIZING | wc -l)
-shards_relocating=$(echo "$shards" | tr ' ' '\n' | grep RELOCATING | wc -l)
-shards_unassigned=$(echo "$shards" | tr ' ' '\n' | grep UNASSIGNED | wc -l)
-
-
-############# PRINT TABLE
-tput setaf 2;echo -e "\nElasticsearch";tput sgr0
-printf "%-20s %-20s\n" "Cluster_Name" "Elastic_Version"
-printf "%-20s %-20s\n" "----------" "----------"
-printf "%-20s %-20s\n" "$cl_name" "$vnumber"
-
-tput setaf 2;echo -e "\nCluster Status";tput sgr0
-printf "%-20s %-20s %-20s %-20s %-20s\n" "Cluster_Status" "Nodes" "Data_Nodes" "Active_Shards_%" "UNASSIGNED_Shards"
-printf "%-20s %-20s %-20s %-20s %-20s\n" "----------" "----------" "----------" "----------" "----------"
-printf "%-20s %-20s %-20s %-20s %-20s\n" "$cluster_status" "$number_of_nodes" "$number_of_data_nodes" "$active_shards_percentage" "$unassigned_shards"
-
-tput setaf 2;echo -e "\nIndices";tput sgr0
-printf "%-20s %-20s %-20s %-20s\n" "Log_Indices" "EMDB_Indices" "Red_Indices" "Yellow_Indices"
-printf "%-20s %-20s %-20s %-20s\n" "----------" "----------" "----------" "----------"
-printf "%-20s %-20s %-20s %-20s\n" "$log_indices_count" "$emdb_indices_count" "$red_indices_count" "$yellow_indices_count"
-
-tput setaf 2;echo -e "\nShards";tput sgr0
-printf "%-20s %-20s %-20s %-20s\n" "Shards_Started" "Shards_Initializing" "Shards_Relocating" "Shards_Unassigned"
-printf "%-20s %-20s %-20s %-20s\n" "----------" "----------" "----------" "----------"
-printf "%-20s %-20s %-20s %-20s\n" "$shards_started" "$shards_initializing" "$shards_relocating" "$shards_unassigned"
-
-tput setaf 2;echo -e "\nNodes";tput sgr0
-curl localhost:9200/_cat/nodes?v
-
-tput setaf 2;echo -e "\nIndices Data";tput sgr0
-ELASTICSEARCH_URL="http://localhost:9200"  # Change this to your Elasticsearch URL
-
-# Function to convert sizes to bytes
-convert_to_bytes() {
-  size=$1
-  if [[ $size == *kb ]]; then
-    echo "$size" | sed 's/kb//' | awk '{print $1 * 1024}'
-  elif [[ $size == *mb ]]; then
-    echo "$size" | sed 's/mb//' | awk '{print $1 * 1024 * 1024}'
-  elif [[ $size == *gb ]]; then
-    echo "$size" | sed 's/gb//' | awk '{print $1 * 1024 * 1024 * 1024}'
-  elif [[ $size == *tb ]]; then
-    echo "$size" | sed 's/tb//' | awk '{print $1 * 1024 * 1024 * 1024 * 1024}'
-  else
-    echo "$size" | sed 's/b//'
-  fi
+<### Script written by Aravind for fixing web console error:  Error: ajax error 404
+Tested on 7.9.X versions
+Send your feedbacks to apcmakkadath@gmail.com
+####>
+Clear-Host
+function green
+{
+    process { Write-Host $_ -ForegroundColor Green }
 }
 
-# Function to calculate average size for matching indices
-calculate_average() {
-  local pattern=$1
-  local indices_data=$2
-
-  total_size=0
-  count=0
-
-  while IFS= read -r line; do
-    index_name=$(echo "$line" | awk '{print $1}')
-    store_size=$(echo "$line" | awk '{print $2}')
-
-    if [[ $index_name == $pattern* ]]; then
-      size_in_bytes=$(convert_to_bytes "$store_size")
-      total_size=$(awk -v total="$total_size" -v size="$size_in_bytes" 'BEGIN {print total + size}')
-      count=$((count + 1))
-    fi
-  done <<< "$indices_data"
-
-  if [ "$count" -eq 0 ]; then
-    echo "No indices matching pattern '$pattern*' found."
-  else
-    total_size_gb=$(awk -v size="$total_size" 'BEGIN {print size / (1024 * 1024 * 1024)}')
-    average_size_bytes=$(awk -v total="$total_size" -v count="$count" 'BEGIN {print total / count}')
-    average_size_gb=$(awk -v size="$average_size_bytes" 'BEGIN {print size / (1024 * 1024 * 1024)}')
-    echo -e "\n$pattern Index"
-    echo "Total indices: $count"
-    #echo "Total store size (bytes): $total_size"
-    printf "Total storage used (GB): %.2f\n" "$total_size_gb"
-    #echo "Average store size (bytes): $average_size_bytes"
-    printf "Average index size (GB): %.2f\n" "$average_size_gb"
-    echo
-  fi
+function red
+{
+    process { Write-Host $_ -ForegroundColor Red }
 }
 
-# Fetch indices data
-  INDICES_DATA=$(curl -s "$ELASTICSEARCH_URL/_cat/indices?h=index,store.size" | grep -vE "^-|^$")
-
-# Check if data retrieval was successful
-if [ -z "$INDICES_DATA" ]; then
-  echo "Failed to retrieve data. Check Elasticsearch URL or credentials."
-  exit 1
-fi
-
-# Calculate averages for patterns
-calculate_average "logs" "$INDICES_DATA"
-calculate_average "emdb" "$INDICES_DATA"
+Write-Output "Fixing web console ajax error" | red 
+Restart-Service -DisplayName "LogRhythm Admin API"
+Start-Sleep 2
+Restart-Service -DisplayName "LogRhythm API Gateway"
+Start-Sleep 2
+Restart-Service -DisplayName "LogRhythm Authentication API"
+Start-Sleep 2
+Restart-Service -DisplayName "LogRhythm Case API"
+Start-Sleep 2
+Restart-Service -DisplayName "LogRhythm Service Registry"
+Start-Sleep 2
+Restart-Service -DisplayName "LogRhythm SQL Service"
+Start-Sleep 2
+Restart-Service -DisplayName "LogRhythm Web Console API"
+Start-Sleep 2
+Restart-Service -DisplayName "LogRhythm Web Console UI"
+Start-Sleep 2
+Restart-Service -DisplayName "LogRhythm Web Indexer"
+Start-Sleep 2
+Restart-Service -DisplayName "LogRhythm Web Services Host API"
+Start-Sleep 2
+Restart-Service -DisplayName "LogRhythm Windows Authentication Service"
+Start-Sleep 2
+Write-Output "Please wait for the web console services to start before you check" | green
+pause
